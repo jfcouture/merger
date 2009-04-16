@@ -14,7 +14,7 @@ module Merger
       return @ignored if @ignored
       @ignored = Array(options[:skip_association])
       keep.class.reflect_on_all_associations.each do |association|
-        @ignored << association.through_reflection.name if association.through_reflection
+        @ignored << association.name if association.through_reflection
       end
       @ignored
     end
@@ -25,7 +25,7 @@ module Merger
           next if ignored_associations.include?(association.name)
           case association.macro
           when :has_many, :has_and_belongs_to_many
-            name = "#{association.name.to_s.singularize}_ids"
+            name = "#{association.name.to_s}"
             keep.send("#{name}=", keep.send(name) | record.send(name))
           when :belongs_to, :has_one
             keep.send("#{association.name}=", record.send(association.name)) if keep.send("#{association.name}").nil?
