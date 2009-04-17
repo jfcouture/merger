@@ -26,7 +26,11 @@ module Merger
           case association.macro
           when :has_many, :has_and_belongs_to_many
             name = "#{association.name.to_s}"
-            keep.send("#{name}=", keep.send(name) | record.send(name))
+            if options[:fast]
+              record.send("#{name}").update_all(association.primary_key_name => keep.id)
+            else
+              keep.send("#{name}=", keep.send(name) | record.send(name))
+            end
           when :belongs_to, :has_one
             keep.send("#{association.name}=", record.send(association.name)) if keep.send("#{association.name}").nil?
           end
@@ -38,7 +42,14 @@ module Merger
       keep.class.transaction do
         associations!
         duplicates.each {|duplicate| duplicate.send(:merged_with, keep) if duplicate.respond_to?(:merged_with) }
-        duplicates.each(&:destroy) if options[:destroy]
+        
+        if options[:destroy]
+          duplicates.each do |dup|
+            dup.reload
+            dup.destroy
+          end
+        end
+        
       end
     end
   
